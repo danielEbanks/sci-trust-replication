@@ -1,6 +1,6 @@
 # Replication README for Caltech Climate Study Analysis
 
-This README provides a detailed overview of the data, code, and steps required to reproduce the figures and tables in the Caltech climate study replication.  It draws on the cleaned and re‐ordered R script (`reordered_r_script_reordered.R`), the associated survey data files (three `.sav` files), and the LaTeX manuscript.  The goal of the script is to reproduce the descriptive statistics and treatment effect estimates used in the paper.
+This README provides a detailed overview of the data, code, and steps required to reproduce the figures and tables in the Caltech climate study replication.  It draws on the cleaned and re‐ordered R script (`figs.R`), the associated survey data files (three `.sav` files), and the LaTeX manuscript.  The goal of the script is to reproduce the descriptive statistics and treatment effect estimates used in the paper.
 
 ## 1. Data sources
 
@@ -18,7 +18,7 @@ Each `.sav` file is a SPSS file.  The replication script uses the `haven` packag
 
 The replication repository contains:
 
-* **`reordered_r_script_reordered.R`** – the fully ordered R script that prepares the data, computes treatment effects and latent effects, generates all figures (Figures 3a–7d), performs robustness checks, and saves results as PDF plots and LaTeX tables.  The original code has been reorganised so that figures appear in the order they are referenced in the paper.
+* **`figs.R`** – the fully ordered R script that prepares the data, computes treatment effects and latent effects, generates all figures (Figures 3a–7d), performs robustness checks, and saves results as PDF plots and LaTeX tables.  The original code has been reorganised so that figures appear in the order they are referenced in the paper.
 * **`Data/`** – a directory expected to hold the three `.sav` data files.  This directory must be created manually and populated with the survey data.
 * **`Plots/`** – a directory where the script writes PDF figures.  Each figure corresponds to a panel in the manuscript (e.g., `study1.levels.soils.pdf`, `biden.study1_treatment_effects_soils.pdf`, etc.).  If the directory does not exist, R will create it when running the script.
 * **`Tables/`** – (optional) the script writes LaTeX table files (via `xtable`) into this directory.  These can be included in the manuscript with `\input{}` commands.
@@ -60,7 +60,7 @@ To reproduce the analysis, you need:
    3. **Source the script** – run the script to load, process, and analyse the data:
 
       ```
-      source("reordered_r_script_reordered.R")
+      source("figs.R")
 
       ```
 
