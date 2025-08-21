@@ -55,7 +55,7 @@ To reproduce the analysis, you need:
 
    Follow these steps to reproduce the figures and tables:
 
-   1. **Obtain the data** – place `CalTech_November_2022.sav`, `CalTech_June_2023.sav` and `caltech_climate_dec23.sav` in a directory called `Data/` at the project root. The script assumes this path when reading the files.
+   1. **Upon Release of the Data** – place `CalTech_November_2022.sav`, `CalTech_June_2023.sav` and `caltech_climate_dec23.sav` in a directory called `Data/` at the project root. The script assumes this path when reading the files.
    2. **Launch R** – open an R session in the project root.
    3. **Source the script** – run the script to load, process, and analyse the data:
 
