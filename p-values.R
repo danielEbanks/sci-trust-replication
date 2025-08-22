@@ -18,10 +18,10 @@ jun23 <- read_sav("Data/CalTech_June_2023.sav")
 dec23 <- read_sav("Data/caltech_climate_dec23.sav")
 
 # helper: prepare 2023 waves by harmonising variable names
-prepare_wave <- function(df, wave) {
+prepare_wave <- function(df, wave, d=1) {
   if (wave %in% c(1)) {
     df <- df %>%  select(x,weight,presvote20post,Q16,race,gender3,region,age4,educ4,pid3,faminc,acsownrent)     %>%
-      mutate(id=1:n(),Q10_binary=as.numeric(Q16==1),rand_ab3=x) %>%
+      mutate(id=1:n(),Q10_binary=as.numeric(Q16==d),rand_ab3=x) %>%
       mutate(treat=case_when(rand_ab3%in%c(4) ~1, TRUE ~0),
              treat_dem=case_when(rand_ab3%in%c(5) ~1, TRUE ~0),
              treat_rep=case_when(rand_ab3%in%c(6) ~1, TRUE ~0),
@@ -38,7 +38,7 @@ prepare_wave <- function(df, wave) {
     
   } else if (wave %in% c(2)) {
     df <- df %>%    select(z,weight,Q11,presvote20post,Q6,race,gender4,region,age4,educ4,pid3,faminc,ownrent) %>%
-      mutate(id=1:n(),Q10_binary=as.numeric(Q11==1),treat=z,rand_ab3=z) %>%
+      mutate(id=1:n(),Q10_binary=as.numeric(Q11==d),treat=z,rand_ab3=z) %>%
       mutate(treat=case_when(rand_ab3%in%c(4) ~1, TRUE ~0),
              treat_dem=case_when(rand_ab3%in%c(5) ~1, TRUE ~0),
              treat_rep=case_when(rand_ab3%in%c(6) ~1, TRUE ~0),
@@ -56,11 +56,20 @@ prepare_wave <- function(df, wave) {
   
 }
 
+
+
 # prepare pooled 2023 dataset
 jun23_prep <- prepare_wave(jun23, wave = 1)
 dec23_prep <- prepare_wave(dec23, wave = 2)
 pooled23   <- bind_rows(jun23_prep, dec23_prep) %>%
   mutate(wave = as.factor(wave))
+
+#Distrust
+jun23_prepd <- prepare_wave(jun23, wave = 1,d=2)
+dec23_prepd <- prepare_wave(dec23, wave = 2,d=2)
+pooled23d   <- bind_rows(jun23_prepd, dec23_prepd) %>%
+  mutate(wave = as.factor(wave))
+
 
 # prepare 2022 dataset in similar form
 nov22_prep <- nov22 %>%
@@ -312,6 +321,15 @@ study2_effects_trump <- estimate_effects(pooled23, vote_subset = 2,
                                          treat_ids_dem = c(2,5), treat_ids_rep = c(3,6),
                                          neutral_ids = c(1,4))
 
+#H2.Distrust
+study2_effects_bidend <- estimate_effects(pooled23d, vote_subset = 1,
+                                         treat_ids_dem = c(2,5), treat_ids_rep = c(3,6),
+                                         neutral_ids = c(1,4))
+study2_effects_trumpd <- estimate_effects(pooled23d, vote_subset = 2,
+                                         treat_ids_dem = c(2,5), treat_ids_rep = c(3,6),
+                                         neutral_ids = c(1,4))
+
+
 #H3
 study2_effects_all_high_ed   <- estimate_effects(pooled23 %>%filter(educ4 %in% c(3,4)), vote_subset = c(1, 2),
                                                  treat_ids_dem = c(2,5), treat_ids_rep = c(3,6),
@@ -327,6 +345,13 @@ study2_tstats_all   <- compute_tstats(study2_effects_all,n_tests = 6)
 #H2
 study2_tstats_biden <- compute_tstats(study2_effects_biden,n_tests = 2)
 study2_tstats_trump <- compute_tstats(study2_effects_trump,n_tests = 2)
+
+
+#H2.Distrust
+
+study2_tstats_bidend <- compute_tstats(study2_effects_bidend,n_tests = 4)
+study2_tstats_trumpd <- compute_tstats(study2_effects_trumpd,n_tests = 4)
+
 
 #H3
 study2_tstats_all_high_ed <-compute_tstats(study2_effects_all_high_ed,n_tests = 6)
@@ -395,10 +420,16 @@ df1_highed <- extract_tstats(study1_tstats_all_high_ed,   "Study 1", "College +"
 df1_lowed  <-extract_tstats(study1_tstats_all_low_ed,   "Study 1", "HS or Less")
 
 
+
+
+# ---- Build tables for Pooled Study ----
 df2_all   <- extract_tstats(study2_tstats_all,   "Pooled", "All")
 
 df2_biden <- extract_tstats(study2_tstats_biden, "Pooled", "Biden")
 df2_trump <- extract_tstats(study2_tstats_trump, "Pooled", "Trump")
+
+df2_bidend <- extract_tstats(study2_tstats_bidend, "Pooled - Distrust", "Biden")
+df2_trumpd <- extract_tstats(study2_tstats_trumpd, "Pooled - Distrust", "Trump")
 
 df2_highed <- extract_tstats(study2_tstats_all_high_ed,   "Pooled", "College +")
 df2_lowed  <-extract_tstats(study2_tstats_all_low_ed,   "Pooled", "HS or Less")
@@ -411,7 +442,7 @@ df2_lowed  <-extract_tstats(study2_tstats_all_low_ed,   "Pooled", "HS or Less")
 results_df <- bind_rows(df1_all, df1_biden, df1_trump,
                         df2_all, df2_biden, df2_trump,
                         df1_highed,df1_lowed,df2_highed,
-                        df2_lowed) %>%
+                        df2_lowed, df2_bidend,df2_trumpd ) %>%
   mutate(
     diff_se = sprintf("%.2f (%.2f)", diff, se),
     p_fmt   = ifelse(p < .001, formatC(p, format = "e", digits = 2),
@@ -549,3 +580,39 @@ gt::gtsave(ed_latent_results_table1, "Tables/latent_effects_study1.tex")
 
 cat(as.character(gt::as_latex(ed_latent_results_table2)))
 gt::gtsave(ed_latent_results_table2, "Tables/latent_effects_pooled.tex")
+
+
+# Distrust
+
+results_df2d <- bind_rows(
+  df2_bidend,df2_trumpd) %>%
+  mutate(
+    diff_se = sprintf("%.2f (%.2f)", diff, se),
+    p_fmt   = ifelse(p < .001, formatC(p, format = "e", digits = 2),
+                     sprintf("%.3f", p))
+  ) %>%
+  select(study, condition, group, diff_se, t, p_fmt)
+
+results_df2d <- relabel_groups(results_df2d) |> 
+  filter(group%in%c("Latent Republican Effect","Latent Democratic Effect"))
+
+# ---- Pretty table ----
+results_table2d <- results_df2d %>%
+  gt(rowname_col = "group") %>%
+  tab_header(
+    title    = "Treatment Effects by Study and Condition",
+    subtitle = "Estimates with Standard Errors, t-statistics, and Bonferroni Corrected p-values"
+  ) %>%
+  cols_label(
+    study     = "Study",
+    condition = "Population",
+    diff_se   = "Estimate (SE)",
+    t         = "t-statistic",
+    p_fmt     = "Bonferroni Corrected p-value"
+  )
+
+print(results_table2d)
+cat(as.character(gt::as_latex(results_table2d)))
+gt::gtsave(ed_latent_results_table2, "Tables/latent_effects_pooled_distrust.tex")
+
+
