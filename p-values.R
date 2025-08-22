@@ -115,8 +115,19 @@ estimate_effects <- function(df, vote_subset, treat_ids_dem, treat_ids_rep, neut
        neut  = neut_mean)
 }
 
+# apply Bonferroni correction by multiplying by n_tests (cap at 1)
+adjust_p <- function(pvals, m) {
+  pmin(pvals * m, 0.999)
+}
+
 # compute t-statistics and p-values for Democratic, Republican, and total effects
-compute_tstats <- function(effects) {
+
+# n_tests: the number of hypothesis tests.  A Bonferroni correction multiplies
+#          each raw p-value by n_tests and caps the result at one.  Standard
+#          errors and t-statistics are unaffected by this adjustment.
+
+
+compute_tstats <- function(effects, n_tests = 1) {
   # differences (neutral minus partisan) in percentage points
   neut_diff  <- (effects$neut$Trust_sci - effects$neut$Trust_people) * 100
   rep_diff  <- (effects$rep$Trust_sci - effects$rep$Trust_people) * 100
@@ -168,6 +179,17 @@ compute_tstats <- function(effects) {
                                           ), lower.tail = FALSE)
   p_latent_rep <- 2 * pt(abs(t_latent_rep), df = n_latent_rep, lower.tail = FALSE)
   p_latent_dem <- 2 * pt(abs(t_latent_dem), df = n_latent_dem, lower.tail = FALSE)
+  
+  
+## apply correction for multiple hypothesis tests
+  p_dem       <- adjust_p(p_dem, n_tests)
+  p_rep       <- adjust_p(p_rep, n_tests)
+  p_neut       <- adjust_p(p_neut, n_tests)
+  p_total      <- adjust_p(p_total, n_tests)
+  p_latent_rep <- adjust_p(p_latent_rep, n_tests)
+  p_latent_dem <- adjust_p(p_latent_dem, n_tests)
+  
+  
   return(list(dem_diff   = dem_diff,  dem_se = dem_se,  dem_t = t_dem,  dem_p = p_dem,
               rep_diff   = rep_diff,  rep_se = rep_se,  rep_t = t_rep,  rep_p = p_rep,
               neut_diff   = neut_diff,  neut_se = neut_se,  neut_t = t_neut,  neut_p = p_neut,
@@ -258,18 +280,21 @@ study1_effects_all_low_ed   <- estimate_effects(nov22_prep %>%filter(educ4 %in% 
 
 
 # H1
-study1_tstats_all   <- compute_tstats(study1_effects_all)
+study1_tstats_all   <- compute_tstats(study1_effects_all,n_tests = 6)
+
+# We run three statistical tests for effects here
 
 #H2
 
-study1_tstats_biden <- compute_tstats(study1_effects_biden)
-study1_tstats_trump <- compute_tstats(study1_effects_trump)
+study1_tstats_biden <- compute_tstats(study1_effects_biden, n_tests = 6)
+study1_tstats_trump <- compute_tstats(study1_effects_trump, n_tests = 6)
 
 
 #H3
 
-study1_tstats_all_high_ed <-compute_tstats(study1_effects_all_high_ed)
-study1_tstats_all_low_ed  <-compute_tstats(study1_effects_all_low_ed)  
+# Two tests (latent effects for high and low education groups)
+study1_tstats_all_high_ed <-compute_tstats(study1_effects_all_high_ed, n_tests = 2)
+study1_tstats_all_low_ed  <-compute_tstats(study1_effects_all_low_ed, n_tests = 2)  
 
 ### 4. Apply to Study 2 (pooled June/Dec 2023 data) ----------------------------
 # In 2023 waves, IDs 2,5=Democrat, 3,6=Republican, 1,4=Neutral.
@@ -297,15 +322,15 @@ study2_effects_all_low_ed   <- estimate_effects(pooled23 %>%filter(educ4 %in% c(
                                                 neutral_ids = c(1,4))
 
 #H1
-study2_tstats_all   <- compute_tstats(study2_effects_all)
+study2_tstats_all   <- compute_tstats(study2_effects_all,n_tests = 6)
 
 #H2
-study2_tstats_biden <- compute_tstats(study2_effects_biden)
-study2_tstats_trump <- compute_tstats(study2_effects_trump)
+study2_tstats_biden <- compute_tstats(study2_effects_biden,n_tests = 2)
+study2_tstats_trump <- compute_tstats(study2_effects_trump,n_tests = 2)
 
 #H3
-study2_tstats_all_high_ed <-compute_tstats(study2_effects_all_high_ed)
-study2_tstats_all_low_ed  <-compute_tstats(study2_effects_all_low_ed)  
+study2_tstats_all_high_ed <-compute_tstats(study2_effects_all_high_ed,n_tests = 6)
+study2_tstats_all_low_ed  <-compute_tstats(study2_effects_all_low_ed,n_tests = 6)  
 
 ### 5. Combine and label p-values ---------------------------------------------
 
